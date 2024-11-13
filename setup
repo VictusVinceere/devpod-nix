@@ -31,6 +31,9 @@ packages=(
     zsh
     neovim
     tmux
+    php
+    composer
+    python3
 )
 
 # Install all packages
