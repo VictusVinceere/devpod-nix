@@ -1,41 +1,74 @@
 #!/bin/bash
-# Set up XDG_CONFIG_HOME
-export XDG_CONFIG_HOME="$HOME"/.config
-mkdir -p "$XDG_CONFIG_HOME"
-mkdir -p "$XDG_CONFIG_HOME"/nixpkgs
 
-# Create symlinks for existing configurations
-ln -sf "$PWD/nvim" "$XDG_CONFIG_HOME"/nvim
-ln -sf "$PWD/.inputrc" "$HOME"/.inputrc
-ln -sf "$PWD/.tmux.conf" "$HOME"/.tmux.conf
-ln -sf "$PWD/.tmux.reset.conf" "$HOME"/.tmux.reset.conf
-ln -sf "$PWD/config.nix" "$XDG_CONFIG_HOME"/nixpkgs/config.nix
-ln -sf "$PWD/.zshrc" "$HOME"/.zshrc
+# Install Homebrew if not installed
+if ! command -v brew &> /dev/null; then
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+fi
 
 # Install Oh My Zsh
 if [ ! -d "$HOME/.oh-my-zsh" ]; then
     sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
 fi
 
-# Install Nix packages
-nix-env -iA nixpkgs.myPackages
+# Install TPM (Tmux Plugin Manager)
+if [ ! -d "$HOME/.tmux/plugins/tpm" ]; then
+    git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
+fi
+
+# Install packages with Homebrew
+packages=(
+    fd
+    ripgrep
+    npm
+    lazygit
+    fzf
+    kubectl
+    fluxcd/tap/flux
+    k9s
+    kubectx
+    direnv
+    zsh
+    neovim
+    tmux
+)
+
+# Install all packages
+for package in "${packages[@]}"; do
+    echo "Installing $package..."
+    brew install "$package"
+done
+
+# Set up configurations
+mkdir -p "$HOME/.config"
+mkdir -p "$HOME/.zsh"
+
+# Create symlinks for configurations
+ln -sf "$PWD/nvim" "$HOME/.config/nvim"
+ln -sf "$PWD/.inputrc" "$HOME/.inputrc"
+ln -sf "$PWD/.tmux.conf" "$HOME/.tmux.conf"
+ln -sf "$PWD/.tmux.reset.conf" "$HOME/.tmux.reset.conf"
+ln -sf "$PWD/.zshrc" "$HOME/.zshrc"
 
 # Set up pure prompt
 if [ ! -d "$HOME/.zsh/pure" ]; then
-    mkdir -p "$HOME/.zsh"
     git clone https://github.com/sindresorhus/pure.git "$HOME/.zsh/pure"
 fi
-
-# Silence source warning
-touch "$HOME/.privaterc"
 
 # Set up completions
 mkdir -p "$HOME/.zfunc"
 kubectl completion zsh > "$HOME/.zfunc/_kubectl"
 
+# Silence source warning
+touch "$HOME/.privaterc"
+
 # Make zsh the default shell
 if [ "$SHELL" != "$(which zsh)" ]; then
-    chsh -s "$(which zsh)"
+    command -v zsh | sudo tee -a /etc/shells
+    sudo chsh -s "$(command -v zsh)" "${USER}"
 fi
 
-echo "Setup complete. Please restart your shell or run: source ~/.zshrc"
+~/.tmux/plugins/tpm/bin/install_plugins
+
+
+echo "Setup complete! Please restart your shell or run: source ~/.zshrc"
