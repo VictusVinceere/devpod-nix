@@ -23,11 +23,6 @@ packages=(
     npm
     lazygit
     fzf
-    kubectl
-    fluxcd/tap/flux
-    k9s
-    kubectx
-    direnv
     zsh
     neovim
     tmux
